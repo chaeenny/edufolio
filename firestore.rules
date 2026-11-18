@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // [프로덕션 보안 모드] 사용자가 설정한 비밀 동기화 키(Secret Key)와 일치하는 볼트 경로만 읽기/쓰기 허용!
+    // 아래 YOUR_SECRET_SYNC_KEY 자리에 앱 내 [클라우드 연동 설정]에서 지정한 본인만의 비밀 키를 넣으세요.
+    match /edufolio_vaults/{vaultKey}/{document=**} {
+      allow read, write: if vaultKey == "YOUR_SECRET_SYNC_KEY";
+    }
+  }
+}

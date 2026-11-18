@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+*.local
+
+# Environment Variables & Secrets (절대 GitHub에 커밋되지 않도록 차단)
+.env
+.env.*
+!.env.example
+
+# Firebase & Supabase Secrets / Local Configs
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+serviceAccountKey*.json
+*firebase-adminsdk*.json
+supabase/.temp/
+supabase/.branches/
+
+# Vercel
+.vercel
+
+# Editor & OS directories
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*

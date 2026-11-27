@@ -15,11 +15,12 @@ export function ExportBackupBar({
     const catMap = new Map(categories.map((c) => [c.id, c.name]));
     const headers = [
       '카테고리',
+      '연수구분(직무/자율)',
       '일자',
       '연도',
       '제목',
       '이수시간(연수)',
-      '기관/모임/교과',
+      '기관/연구회/교과(2022개정)',
       '단계/형태',
       '핵심요약',
       '태그',
@@ -35,6 +36,10 @@ export function ExportBackupBar({
 
     const rows = records.map((r) => {
       const catName = catMap.get(r.categoryId) || r.categoryId;
+      const division =
+        r.categoryId === 'training'
+          ? r.payload.trainingDivision || '직무연수'
+          : '-';
       const org =
         r.payload.institution ||
         r.payload.groupName ||
@@ -46,6 +51,7 @@ export function ExportBackupBar({
       const latestVer = r.versionHistory?.[0]?.version || 'v1.0';
       return [
         catName,
+        division,
         r.date,
         r.year,
         r.title,

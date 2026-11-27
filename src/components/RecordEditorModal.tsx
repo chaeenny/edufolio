@@ -15,13 +15,19 @@ import {
   AttachmentItem,
   CategoryItem,
   ChecklistItem,
+  CURRICULUM_2022_SUBJECTS,
   EduRecord,
   ExternalLinkItem,
   LabStage,
+  TrainingDivision,
 } from '../types/edufolio';
 import { SmartDropzone } from './SmartDropzone';
 import { MultiLinkEditor } from './MultiLinkManager';
-import { uploadFileAttachment } from '../services/storageManager';
+import {
+  getSavedPlcGroups,
+  savePlcGroups,
+  uploadFileAttachment,
+} from '../services/storageManager';
 
 interface RecordEditorModalProps {
   categories: CategoryItem[];
@@ -55,7 +61,10 @@ export function RecordEditorModal({
   const [summary, setSummary] = useState(editingRecord?.summary || '');
   const [pinned, setPinned] = useState(editingRecord?.pinned || false);
 
-  // Training Payload
+  // 1. Training Payload (직무연수 vs 자율연수 구분 포함)
+  const [trainingDivision, setTrainingDivision] = useState<TrainingDivision>(
+    editingRecord?.payload?.trainingDivision || '직무연수'
+  );
   const [institution, setInstitution] = useState(
     editingRecord?.payload?.institution || ''
   );
@@ -72,10 +81,12 @@ export function RecordEditorModal({
     editingRecord?.payload?.classroomIdeas || ''
   );
 
-  // PLC Payload
+  // 2. PLC Payload (신과람 & 추가/삭제 가능한 교학공 프리셋 선택)
+  const [plcGroups, setPlcGroups] = useState<string[]>(getSavedPlcGroups());
   const [groupName, setGroupName] = useState(
-    editingRecord?.payload?.groupName || ''
+    editingRecord?.payload?.groupName || getSavedPlcGroups()[0] || '신과람 (신나는 과학을 만드는 사람들)'
   );
+  const [newPlcGroupName, setNewPlcGroupName] = useState('');
   const [participants, setParticipants] = useState(
     editingRecord?.payload?.participants || ''
   );
@@ -87,9 +98,9 @@ export function RecordEditorModal({
     editingRecord?.payload?.meetingMinutes || ''
   );
 
-  // Lab Payload
+  // 3. Lab Payload (2022 개정 교육과정 화학/통합과학/과탐실 교과 선택)
   const [gradeSubject, setGradeSubject] = useState(
-    editingRecord?.payload?.gradeSubject || ''
+    editingRecord?.payload?.gradeSubject || '화학'
   );
   const [unitName, setUnitName] = useState(
     editingRecord?.payload?.unitName || ''
@@ -122,7 +133,7 @@ export function RecordEditorModal({
     editingRecord?.payload?.safetyNotes || ''
   );
 
-  // Custom Payload
+  // 4. Custom Payload
   const [organizationOrRole, setOrganizationOrRole] = useState(
     editingRecord?.payload?.organizationOrRole || ''
   );
@@ -182,6 +193,31 @@ export function RecordEditorModal({
     return () => window.removeEventListener('paste', handlePaste);
   }, [templateType]);
 
+  const handleAddPlcGroup = () => {
+    const trimmed = newPlcGroupName.trim();
+    if (!trimmed) return;
+    if (!plcGroups.includes(trimmed)) {
+      const next = [...plcGroups, trimmed];
+      setPlcGroups(next);
+      savePlcGroups(next);
+    }
+    setGroupName(trimmed);
+    setNewPlcGroupName('');
+  };
+
+  const handleRemovePlcGroup = (target: string) => {
+    if (target.includes('신과람')) {
+      alert('매년 참여하시는 기본 연구회(신과람)는 고정 항목입니다.');
+      return;
+    }
+    const next = plcGroups.filter((g) => g !== target);
+    setPlcGroups(next);
+    savePlcGroups(next);
+    if (groupName === target) {
+      setGroupName(next[0] || '신과람 (신나는 과학을 만드는 사람들)');
+    }
+  };
+
   const handleAddChecklistItem = () => {
     if (!newMaterialText.trim()) return;
     setMaterialsChecklist([
@@ -218,6 +254,7 @@ export function RecordEditorModal({
       summary: summary.trim(),
       pinned,
       payload: {
+        trainingDivision,
         institution,
         hours: Number(hours) || 0,
         trainingType,
@@ -366,14 +403,14 @@ export function RecordEditorModal({
 
             <div className="sm:col-span-12">
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                제목 (연수명 / 교학공 모임명 / 실험 자료명) *
+                제목 (연수명 / 연구회·교학공 주제 / 실험 자료명) *
               </label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="예: 광합성 산소 발생 정량 실험 키트 & MBL 센서 활동지 개발"
+                placeholder="예: 산화·환원 SSC 한천 젤 전기분해 실험 키트 개발"
                 className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold focus:border-indigo-600 focus:outline-none"
               />
             </div>
@@ -399,21 +436,44 @@ export function RecordEditorModal({
                 type="text"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
-                placeholder="예: 생명과학, 광합성, MBL센서, 예비실험완료, 수행평가"
+                placeholder="예: 화학, 통합과학1, 과탐실1, MBL센서, 예비실험완료"
                 className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-sm focus:border-indigo-600 focus:outline-none"
               />
             </div>
           </div>
 
           {/* ================================================================
-              1. 직무·자율 연수 (Training) 특화 섹션
+              1. 직무·자율 연수 (Training) 특화 섹션 - 직무 vs 자율 선택 버튼 포함!
              ================================================================ */}
           {templateType === 'training' && (
             <div className="space-y-4 p-5 rounded-2xl border border-indigo-200 bg-indigo-50/30">
-              <h3 className="text-sm font-bold text-indigo-950 flex items-center gap-2">
-                <GraduationCap className="w-4 h-4 text-indigo-600" />
-                직무·자율 연수 상세 정보
-              </h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-indigo-950 flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-indigo-600" />
+                  직무·자율 연수 상세 정보
+                </h3>
+
+                {/* 직무연수 vs 자율연수 구분 토글 */}
+                <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-indigo-200">
+                  {(['직무연수', '자율연수'] as TrainingDivision[]).map((div) => (
+                    <button
+                      key={div}
+                      type="button"
+                      onClick={() => setTrainingDivision(div)}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition ${
+                        trainingDivision === div
+                          ? div === '직무연수'
+                            ? 'bg-indigo-600 text-white shadow-xs'
+                            : 'bg-sky-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-indigo-50'
+                      }`}
+                    >
+                      {div === '직무연수' ? '✓ 직무연수 (통계 합산)' : '자율연수'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -436,7 +496,7 @@ export function RecordEditorModal({
                     min={0}
                     step={0.5}
                     value={hours}
-                    onChange={(e) => setHours( parseFloat(e.target.value) || 0 )}
+                    onChange={(e) => setHours(parseFloat(e.target.value) || 0)}
                     className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-indigo-700"
                   />
                 </div>
@@ -482,7 +542,7 @@ export function RecordEditorModal({
                   rows={3}
                   value={classroomIdeas}
                   onChange={(e) => setClassroomIdeas(e.target.value)}
-                  placeholder="실제 교실 수업이나 실험 수행평가에 어떻게 적용할지 아이디어를 적어보세요"
+                  placeholder="실제 화학/통합과학 수업이나 실험 수행평가에 어떻게 적용할지 적어보세요"
                   className="w-full rounded-xl border border-slate-300 bg-white p-3 text-sm"
                 />
               </div>
@@ -490,25 +550,104 @@ export function RecordEditorModal({
           )}
 
           {/* ================================================================
-              2. 교사학습공동체 (PLC) 특화 섹션
+              2. 연구회 · 교학공 (PLC) 특화 섹션 - 신과람 고정 + 교학공 이름 추가/삭제 선택기
              ================================================================ */}
           {templateType === 'plc' && (
             <div className="space-y-4 p-5 rounded-2xl border border-emerald-200 bg-emerald-50/30">
               <h3 className="text-sm font-bold text-emerald-950 flex items-center gap-2">
                 <Users className="w-4 h-4 text-emerald-600" />
-                교사학습공동체 (교학공) 활동 기록
+                연구회(신과람) · 교사학습공동체 활동 기록
               </h3>
+
+              {/* 연구회 / 교학공 원클릭 선택 및 추가/제거 매니저 */}
+              <div className="bg-white p-4 rounded-xl border border-emerald-200/90 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-extrabold text-slate-800">
+                    연구회 / 교학공 선택 (클릭하여 선택 · 매년 바뀌는 교학공을 추가/삭제하세요)
+                  </label>
+                  <span className="text-[11px] font-bold text-emerald-700">
+                    선택됨: {groupName}
+                  </span>
+                </div>
+
+                {/* Preset Pills */}
+                <div className="flex flex-wrap gap-2">
+                  {plcGroups.map((grp) => {
+                    const isSelected = groupName === grp;
+                    const isSingwaram = grp.includes('신과람');
+                    return (
+                      <div
+                        key={grp}
+                        className={`inline-flex items-center rounded-xl border text-xs font-bold transition overflow-hidden ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setGroupName(grp)}
+                          className="px-3 py-1.5 text-left"
+                        >
+                          {isSingwaram ? `★ ${grp}` : grp}
+                        </button>
+                        {!isSingwaram && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRemovePlcGroup(grp);
+                            }}
+                            className={`px-2 py-1.5 border-l transition ${
+                              isSelected
+                                ? 'border-emerald-500 text-emerald-100 hover:bg-emerald-700 hover:text-white'
+                                : 'border-slate-200 text-slate-400 hover:bg-rose-50 hover:text-rose-600'
+                            }`}
+                            title="이 교학공 이름 목록에서 제거"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Add new PLC group input */}
+                <div className="flex gap-2 pt-1">
+                  <input
+                    type="text"
+                    value={newPlcGroupName}
+                    onChange={(e) => setNewPlcGroupName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddPlcGroup();
+                      }
+                    }}
+                    placeholder="새 교학공/연구회 이름 추가 (예: 2026 에듀테크 화학 교학공)"
+                    className="flex-1 rounded-xl border border-slate-300 px-3 py-1.5 text-xs sm:text-sm focus:border-emerald-600 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddPlcGroup}
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shrink-0"
+                  >
+                    + 목록에 추가
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    교학공 모임명
+                    선택된 모임명 (직접 수정도 가능)
                   </label>
                   <input
                     type="text"
                     value={groupName}
                     onChange={(e) => setGroupName(e.target.value)}
-                    placeholder="예: 미래형 디지털 과학탐구 교학공"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-emerald-900"
                   />
                 </div>
                 <div>
@@ -519,7 +658,7 @@ export function RecordEditorModal({
                     type="text"
                     value={participants}
                     onChange={(e) => setParticipants(e.target.value)}
-                    placeholder="예: 김과교, 이생물, 박화학, 최물리 (4명)"
+                    placeholder="예: 신과람 화학분과 교사 8명"
                     className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
                   />
                 </div>
@@ -533,7 +672,7 @@ export function RecordEditorModal({
                   type="text"
                   value={topic}
                   onChange={(e) => setTopic(e.target.value)}
-                  placeholder="예: 과정중심 수행평가 실험 루브릭 공동 개발"
+                  placeholder="예: 2022 개정 화학 반응의 세계 SSC 키트 공동 개발"
                   className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
                 />
               </div>
@@ -567,14 +706,14 @@ export function RecordEditorModal({
           )}
 
           {/* ================================================================
-              3. 교육자료 개발 - 실험 중심 (Lab & Material Dev) 특화 섹션
+              3. 교육자료 개발 - 실험 중심 (2022 개정 교육과정 화학/통합과학/과탐실 버튼 선택)
              ================================================================ */}
           {templateType === 'lab' && (
             <div className="space-y-4 p-5 rounded-2xl border border-amber-200 bg-amber-50/30">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-bold text-amber-950 flex items-center gap-2">
                   <FlaskConical className="w-4 h-4 text-amber-600" />
-                  실험 중심 교육자료 개발 특화 템플릿
+                  실험 중심 교육자료 개발 (2022 개정 교육과정)
                 </h3>
 
                 {/* Stage Pill Selector */}
@@ -596,30 +735,56 @@ export function RecordEditorModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    대상 학년 / 교과
-                  </label>
-                  <input
-                    type="text"
-                    value={gradeSubject}
-                    onChange={(e) => setGradeSubject(e.target.value)}
-                    placeholder="예: 고1 통합과학 / 중2 과학"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
-                  />
+              {/* 2022 개정 교육과정 교과 빠른 선택 버튼 & 직접 입력 */}
+              <div className="bg-white p-4 rounded-xl border border-amber-200/80 space-y-2.5">
+                <label className="block text-xs font-extrabold text-slate-800">
+                  2022 개정 교육과정 교과 선택 (클릭 시 즉시 선택)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {CURRICULUM_2022_SUBJECTS.map((subj) => {
+                    const active = gradeSubject === subj;
+                    return (
+                      <button
+                        key={subj}
+                        type="button"
+                        onClick={() => setGradeSubject(subj)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                          active
+                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-amber-50 hover:border-amber-300'
+                        }`}
+                      >
+                        {subj}
+                      </button>
+                    );
+                  })}
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    단원명
-                  </label>
-                  <input
-                    type="text"
-                    value={unitName}
-                    onChange={(e) => setUnitName(e.target.value)}
-                    placeholder="예: 물질대사와 광합성 / 산화와 환원"
-                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
-                  />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">
+                      선택된 교과명 (직접 수정/입력 가능)
+                    </label>
+                    <input
+                      type="text"
+                      value={gradeSubject}
+                      onChange={(e) => setGradeSubject(e.target.value)}
+                      placeholder="예: 화학, 물질과 에너지, 화학 반응의 세계"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-amber-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">
+                      단원명 / 성취기준 주제
+                    </label>
+                    <input
+                      type="text"
+                      value={unitName}
+                      onChange={(e) => setUnitName(e.target.value)}
+                      placeholder="예: 산화와 환원 / 엔탈피와 화학 평형"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -652,7 +817,7 @@ export function RecordEditorModal({
                         handleAddChecklistItem();
                       }
                     }}
-                    placeholder="준비물/시약 추가 (예: 0.2M 탄산수소나트륨 500mL, MBL 산소 센서)"
+                    placeholder="준비물/시약 추가 (예: 0.1M 황산나트륨 수용액, MBL pH 센서)"
                     className="flex-1 rounded-xl border border-slate-300 px-3 py-1.5 text-xs sm:text-sm"
                   />
                   <button

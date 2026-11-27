@@ -215,7 +215,7 @@ export function RecordDetailModal({
               )}
               {templateType === 'training' && record.payload.hours > 0 && (
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-xl border border-indigo-200">
-                  <Clock className="w-3.5 h-3.5" /> {record.payload.hours}시간 이수 ({record.payload.trainingType})
+                  <Clock className="w-3.5 h-3.5" /> [{record.payload.trainingDivision || '직무연수'}] {record.payload.hours}시간 이수 ({record.payload.trainingType})
                 </span>
               )}
             </div>
@@ -514,7 +514,13 @@ export function RecordDetailModal({
              ================================================================= */}
           {templateType === 'training' && (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100">
+                <div>
+                  <span className="text-xs text-slate-500 font-semibold">연수 구분</span>
+                  <p className="text-sm font-extrabold text-indigo-700 mt-0.5">
+                    {record.payload.trainingDivision || '직무연수'}
+                  </p>
+                </div>
                 <div>
                   <span className="text-xs text-slate-500 font-semibold">연수 기관</span>
                   <p className="text-sm font-bold text-slate-900 mt-0.5">

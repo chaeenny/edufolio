@@ -18,6 +18,33 @@ const STORE_RECORDS = 'records';
 const STORE_CATEGORIES = 'categories';
 const STORE_BLOBS = 'file_blobs';
 const CLOUD_CONFIG_KEY = 'edufolio_firebase_config_v1';
+const PLC_GROUPS_KEY = 'edufolio_plc_groups_v1';
+
+export const DEFAULT_PLC_GROUPS = [
+  '신과람 (신나는 과학을 만드는 사람들)',
+  '청담고 과학과 교학공',
+  '디지털·AI 화학탐구 교학공',
+];
+
+export function getSavedPlcGroups(): string[] {
+  try {
+    const raw = localStorage.getItem(PLC_GROUPS_KEY);
+    if (!raw) return DEFAULT_PLC_GROUPS;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      // Ensure 신과람 is always present at top
+      const hasSingwaram = parsed.some((g: string) => g.includes('신과람'));
+      return hasSingwaram ? parsed : [DEFAULT_PLC_GROUPS[0], ...parsed];
+    }
+    return DEFAULT_PLC_GROUPS;
+  } catch {
+    return DEFAULT_PLC_GROUPS;
+  }
+}
+
+export function savePlcGroups(groups: string[]): void {
+  localStorage.setItem(PLC_GROUPS_KEY, JSON.stringify(groups));
+}
 
 // Root Vault Collection (Secured by Secret Key in Production Firestore Rules)
 export const COL_VAULTS = 'edufolio_vaults';

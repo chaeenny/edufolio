@@ -111,17 +111,17 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
     name: '직무·자율 연수',
     icon: 'GraduationCap',
     color: 'indigo',
-    description: '직무연수, 자율연수, 핵심 배움 요약, 수업 적용 아이디어 및 이수증 통합 관리',
+    description: '직무연수·자율연수 구분 관리, 이수 시간 통계, 핵심 배움 요약 및 이수증 보관',
     isDefault: true,
     templateType: 'training',
     sortOrder: 1,
   },
   {
     id: 'plc',
-    name: '교사학습공동체 (교학공)',
+    name: '연구회 · 교학공',
     icon: 'Users',
     color: 'emerald',
-    description: '교학공 모임 기록, 수업 나눔, 회의록 및 공동 산출물 아카이브',
+    description: '신과람 및 교내·외 교사학습공동체 모임 기록, 수업 나눔, 회의록 및 산출물',
     isDefault: true,
     templateType: 'plc',
     sortOrder: 2,
@@ -131,7 +131,7 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
     name: '교육자료 개발 (실험 중심)',
     icon: 'FlaskConical',
     color: 'amber',
-    description: '예비실험 시행착오 비교, 시약 체크리스트, 버전별(v1.0→v2.0) 실험 자료 개발 타임라인',
+    description: '2022 개정 교육과정 화학·통합과학·과탐실 실험 설계, 시행착오 비교 및 버전 타임라인',
     isDefault: true,
     templateType: 'lab',
     sortOrder: 3,
@@ -161,7 +161,7 @@ export const INITIAL_SAMPLE_RECORDS: EduRecord[] = [
     pinned: true,
     payload: {
       // Lab fields
-      gradeSubject: '고1 통합과학 / 중2 과학',
+      gradeSubject: '과학탐구실험1',
       unitName: '물질대사와 광합성 (빛의 세기와 이산화탄소 농도)',
       stage: '완성/수업적용',
       hypothesis:
@@ -314,6 +314,7 @@ export const INITIAL_SAMPLE_RECORDS: EduRecord[] = [
       '무선 센서 기반 실시간 데이터 수집과 파이썬/스프레드시트 시각화 기법을 익히고, 수행평가 루브릭에 적용하는 실습형 직무연수 이수 기록입니다.',
     pinned: true,
     payload: {
+      trainingDivision: '직무연수',
       institution: '서울특별시교육청융합과학교육원',
       hours: 30,
       trainingType: '혼합',
@@ -386,15 +387,15 @@ export const INITIAL_SAMPLE_RECORDS: EduRecord[] = [
   {
     id: 'rec_plc_rubric_2026',
     categoryId: 'plc',
-    title: '미래형 과학탐구 교학공 11월 정기 모임 - 실험 설계 루브릭 & AI 피드백 나눔',
+    title: '신과람 11월 정기 연구회 - 화학·통합과학 탐구 실험 루브릭 & 수업 나눔',
     date: '2026-11-05',
     year: 2026,
-    tags: ['교학공', '수업나눔', '루브릭개발', '과정중심평가'],
+    tags: ['신과람', '수업나눔', '루브릭개발', '과정중심평가'],
     summary:
-      '교내 과학 교사 5인이 모여 학생 주도형 실험 설계 수행평가의 채점 기준표(루브릭)를 고도화하고, 예비실험 시행착오 사례를 공유한 공동 연구 기록입니다.',
+      '신과람 연구회 교사들이 모여 학생 주도형 화학·탐구 실험 설계 수행평가의 채점 기준표(루브릭)를 고도화하고, 예비실험 시행착오 사례를 공유한 공동 연구 기록입니다.',
     pinned: false,
     payload: {
-      groupName: '미래형 디지털 과학탐구 교사학습공동체',
+      groupName: '신과람 (신나는 과학을 만드는 사람들)',
       participants: '김과교(대표), 이생물, 박화학, 최물리, 정지구 (총 5명)',
       topic: '오개념 및 실험 실패 과정을 긍정적으로 평가하는 과정중심 탐구 루브릭 공동 개발',
       sharedContent:
@@ -473,7 +474,7 @@ export const INITIAL_SAMPLE_RECORDS: EduRecord[] = [
       '페트리 접시와 한천(Agar) 젤에 BTB/페놀프탈레인 지시약을 혼합하여 9V 건전지 하나로 음극과 양극의 산화·환원 색변화를 직관적으로 관찰하는 예비실험 단계 자료입니다.',
     pinned: false,
     payload: {
-      gradeSubject: '고2 화학I / 중3 과학',
+      gradeSubject: '화학 반응의 세계',
       unitName: '산화와 환원 / 수용액의 전기분해',
       stage: '예비실험',
       hypothesis:

@@ -26,6 +26,7 @@ import {
   AttachmentItem,
   CategoryItem,
   CloudConfig,
+  CURRICULUM_2022_SUBJECTS,
   EduRecord,
   LabStage,
   SyncStatus,
@@ -68,6 +69,8 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedTag, setSelectedTag] = useState<string>('all');
+  const [selectedTrainingDiv, setSelectedTrainingDiv] = useState<'all' | '직무연수' | '자율연수'>('all');
+  const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>('all');
 
   // Cloud & Realtime Sync state
   const [cloudConfig, setCloudConfig] = useState<CloudConfig>(getCloudConfig());
@@ -108,6 +111,13 @@ export function App() {
         await saveLocalCategory(c);
       }
       localCats = DEFAULT_CATEGORIES;
+    } else {
+      // Auto-update old default PLC category name to '연구회 · 교학공'
+      const plcCat = localCats.find((c) => c.id === 'plc');
+      if (plcCat && plcCat.name.includes('교사학습공동체')) {
+        plcCat.name = '연구회 · 교학공';
+        await saveLocalCategory(plcCat);
+      }
     }
     setCategories(localCats);
 
@@ -367,6 +377,14 @@ export function App() {
       if (selectedTag !== 'all' && !(rec.tags || []).includes(selectedTag)) {
         return false;
       }
+      if (selectedTrainingDiv !== 'all') {
+        if (rec.categoryId !== 'training') return false;
+        const div = rec.payload?.trainingDivision || '직무연수';
+        if (div !== selectedTrainingDiv) return false;
+      }
+      if (selectedSubjectFilter !== 'all') {
+        if ((rec.payload?.gradeSubject || '') !== selectedSubjectFilter) return false;
+      }
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const inTitle = rec.title.toLowerCase().includes(q);
@@ -382,11 +400,27 @@ export function App() {
       }
       return true;
     });
-  }, [records, selectedCategoryId, selectedYear, selectedTag, searchQuery]);
+  }, [
+    records,
+    selectedCategoryId,
+    selectedYear,
+    selectedTag,
+    selectedTrainingDiv,
+    selectedSubjectFilter,
+    searchQuery,
+  ]);
 
   const stats = useMemo(() => {
-    const totalTrainingHours = records
-      .filter((r) => r.categoryId === 'training')
+    const trainingRecords = records.filter((r) => r.categoryId === 'training');
+    const totalTrainingHours = trainingRecords.reduce(
+      (sum, r) => sum + (Number(r.payload?.hours) || 0),
+      0
+    );
+    const jikmuHours = trainingRecords
+      .filter((r) => (r.payload?.trainingDivision || '직무연수') === '직무연수')
+      .reduce((sum, r) => sum + (Number(r.payload?.hours) || 0), 0);
+    const jayulHours = trainingRecords
+      .filter((r) => r.payload?.trainingDivision === '자율연수')
       .reduce((sum, r) => sum + (Number(r.payload?.hours) || 0), 0);
     const totalAttachments = records.reduce(
       (sum, r) => sum + (r.attachments?.length || 0),
@@ -405,6 +439,8 @@ export function App() {
     return {
       totalRecords: records.length,
       totalTrainingHours,
+      jikmuHours,
+      jayulHours,
       totalAttachments,
       totalStorageBytes,
       completedLabs,
@@ -557,8 +593,8 @@ export function App() {
           Main Workspace Layout (Clean Sidebar + Focused Content Area)
          ===================================================================== */}
       <div className="max-w-[1400px] w-full mx-auto px-4 sm:px-6 py-6 flex-1 flex flex-col lg:flex-row gap-6">
-        {/* Left Sidebar: Only Categories & Simple Quick Drop */}
-        <aside className="w-full lg:w-64 shrink-0 space-y-4">
+        {/* Left Sidebar: Full-width Categories (No Truncation) & Quick Drop */}
+        <aside className="w-full lg:w-72 shrink-0 space-y-4">
           <div className="bg-white rounded-2xl border border-slate-200/90 p-3.5 space-y-2">
             <div className="flex items-center justify-between px-2 py-1">
               <span className="text-xs font-bold text-slate-400">카테고리</span>
@@ -577,7 +613,11 @@ export function App() {
             <div className="space-y-1">
               <button
                 type="button"
-                onClick={() => setSelectedCategoryId('all')}
+                onClick={() => {
+                  setSelectedCategoryId('all');
+                  setSelectedTrainingDiv('all');
+                  setSelectedSubjectFilter('all');
+                }}
                 className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition ${
                   selectedCategoryId === 'all'
                     ? 'bg-slate-900 text-white'
@@ -585,10 +625,10 @@ export function App() {
                 }`}
               >
                 <span className="flex items-center gap-2.5">
-                  <LayoutGrid className="w-4 h-4" /> 전체 보기
+                  <LayoutGrid className="w-4 h-4 shrink-0" /> 전체 보기
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded-md text-xs ${
+                  className={`px-2 py-0.5 rounded-md text-xs shrink-0 ${
                     selectedCategoryId === 'all'
                       ? 'bg-white/20 text-white'
                       : 'bg-slate-100 text-slate-600'
@@ -611,8 +651,12 @@ export function App() {
                   >
                     <button
                       type="button"
-                      onClick={() => setSelectedCategoryId(cat.id)}
-                      className="flex-1 flex items-center gap-2.5 px-3 py-2.5 text-left min-w-0"
+                      onClick={() => {
+                        setSelectedCategoryId(cat.id);
+                        setSelectedTrainingDiv('all');
+                        setSelectedSubjectFilter('all');
+                      }}
+                      className="flex-1 flex items-center gap-2.5 px-3 py-2.5 text-left"
                     >
                       <span
                         className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
@@ -622,7 +666,7 @@ export function App() {
                         <DynamicIcon name={cat.icon} className="w-3.5 h-3.5" />
                       </span>
                       <span
-                        className={`text-xs sm:text-sm font-bold truncate ${
+                        className={`text-xs sm:text-[13px] font-bold leading-snug break-keep ${
                           active ? pal.text : 'text-slate-700'
                         }`}
                       >
@@ -630,7 +674,7 @@ export function App() {
                       </span>
                     </button>
 
-                    <div className="flex items-center gap-1 pr-2.5">
+                    <div className="flex items-center gap-1 pr-2.5 shrink-0">
                       <button
                         type="button"
                         onClick={(e) => {
@@ -706,9 +750,14 @@ export function App() {
                   <GraduationCap className="w-5 h-5" />
                 </div>
                 <div>
-                  <div className="text-xs font-medium text-slate-500">누적 연수 이수시간</div>
-                  <div className="text-lg font-extrabold text-indigo-600">
-                    {stats.totalTrainingHours}시간
+                  <div className="text-xs font-medium text-slate-500">
+                    연수 이수시간 (직무 · 자율)
+                  </div>
+                  <div className="text-lg font-extrabold text-indigo-600 flex items-baseline gap-1.5">
+                    <span>직무 {stats.jikmuHours}h</span>
+                    <span className="text-xs font-semibold text-slate-400">
+                      (자율 {stats.jayulHours}h / 총 {stats.totalTrainingHours}h)
+                    </span>
                   </div>
                 </div>
               </div>
@@ -782,8 +831,39 @@ export function App() {
               </button>
             </div>
 
-            {/* Right Controls: Year Filter & Export/Backup */}
+            {/* Right Controls: Sub-filters (직무/자율, 2022 개정 교과) + Year Filter + Excel Export */}
             <div className="flex flex-wrap items-center gap-2">
+              {(selectedCategoryId === 'training' || selectedCategoryId === 'all') && (
+                <select
+                  value={selectedTrainingDiv}
+                  onChange={(e) =>
+                    setSelectedTrainingDiv(
+                      e.target.value as 'all' | '직무연수' | '자율연수'
+                    )
+                  }
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-indigo-700 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">연수 구분 전체</option>
+                  <option value="직무연수">직무연수만 보기</option>
+                  <option value="자율연수">자율연수만 보기</option>
+                </select>
+              )}
+
+              {(selectedCategoryId === 'lab' || selectedCategoryId === 'all') && (
+                <select
+                  value={selectedSubjectFilter}
+                  onChange={(e) => setSelectedSubjectFilter(e.target.value)}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">2022 개정 교과 전체</option>
+                  {CURRICULUM_2022_SUBJECTS.map((subj) => (
+                    <option key={subj} value={subj}>
+                      {subj}
+                    </option>
+                  ))}
+                </select>
+              )}
+
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(e.target.value)}
@@ -798,7 +878,7 @@ export function App() {
               </select>
 
               <ExportBackupBar
-                records={records}
+                records={filteredRecords}
                 categories={categories}
                 onAfterImport={loadFromStorage}
               />
@@ -849,17 +929,35 @@ export function App() {
              ================================================================= */}
           {viewMode === 'table' && (
             <div className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden">
-              <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <div className="px-5 py-3.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-bold text-slate-700">
-                  전체 내역 ({filteredRecords.length}건)
+                  조회된 내역 ({filteredRecords.length}건)
                 </span>
-                <span className="text-xs font-bold text-indigo-700">
-                  연수 시간 합계:{' '}
-                  {filteredRecords
-                    .filter((r) => r.categoryId === 'training')
-                    .reduce((acc, r) => acc + (Number(r.payload?.hours) || 0), 0)}
-                  시간
-                </span>
+                <div className="flex items-center gap-3 text-xs font-bold">
+                  <span className="text-indigo-700">
+                    직무연수 합계:{' '}
+                    {filteredRecords
+                      .filter(
+                        (r) =>
+                          r.categoryId === 'training' &&
+                          (r.payload?.trainingDivision || '직무연수') === '직무연수'
+                      )
+                      .reduce((acc, r) => acc + (Number(r.payload?.hours) || 0), 0)}
+                    시간
+                  </span>
+                  <span className="text-slate-400">|</span>
+                  <span className="text-sky-700">
+                    자율연수 합계:{' '}
+                    {filteredRecords
+                      .filter(
+                        (r) =>
+                          r.categoryId === 'training' &&
+                          r.payload?.trainingDivision === '자율연수'
+                      )
+                      .reduce((acc, r) => acc + (Number(r.payload?.hours) || 0), 0)}
+                    시간
+                  </span>
+                </div>
               </div>
 
               <div className="overflow-x-auto">

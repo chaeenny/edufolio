@@ -190,7 +190,13 @@ export function RecordCard({
 
               {templateType === 'training' && record.payload.hours > 0 && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold text-[11px]">
-                  <Clock className="w-3 h-3" /> {record.payload.hours}h
+                  <Clock className="w-3 h-3" /> {record.payload.trainingDivision || '직무연수'} · {record.payload.hours}h
+                </span>
+              )}
+
+              {templateType === 'plc' && record.payload.groupName && (
+                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px] truncate max-w-[160px]">
+                  {record.payload.groupName}
                 </span>
               )}
             </div>

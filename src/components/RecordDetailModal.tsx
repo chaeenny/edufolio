@@ -580,6 +580,17 @@ export function RecordDetailModal({
                     {record.payload.participants || '-'}
                   </p>
                 </div>
+                {(record.payload.gradeSubject || record.payload.unitName) && (
+                  <div className="sm:col-span-2">
+                    <span className="text-xs text-slate-500 font-semibold">
+                      해당 교과 및 단원 (2022 개정 교육과정)
+                    </span>
+                    <p className="text-sm font-extrabold text-emerald-900 mt-0.5">
+                      {record.payload.gradeSubject || '-'}{' '}
+                      {record.payload.unitName ? `• ${record.payload.unitName}` : ''}
+                    </p>
+                  </div>
+                )}
                 <div className="sm:col-span-2">
                   <span className="text-xs text-slate-500 font-semibold">공동 연구 주제</span>
                   <p className="text-sm font-bold text-slate-900 mt-0.5">

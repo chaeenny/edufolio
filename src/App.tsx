@@ -831,9 +831,9 @@ export function App() {
               </button>
             </div>
 
-            {/* Right Controls: Sub-filters (직무/자율, 2022 개정 교과) + Year Filter + Excel Export */}
+            {/* Right Controls: Context-aware Sub-filters + Year Filter + Excel Export */}
             <div className="flex flex-wrap items-center gap-2">
-              {(selectedCategoryId === 'training' || selectedCategoryId === 'all') && (
+              {selectedCategoryId === 'training' && (
                 <select
                   value={selectedTrainingDiv}
                   onChange={(e) =>
@@ -841,19 +841,19 @@ export function App() {
                       e.target.value as 'all' | '직무연수' | '자율연수'
                     )
                   }
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-indigo-700 focus:outline-none cursor-pointer"
+                  className="rounded-xl border border-indigo-200 bg-indigo-50/60 px-3 py-1.5 text-xs font-bold text-indigo-700 focus:outline-none cursor-pointer"
                 >
-                  <option value="all">연수 구분 전체</option>
+                  <option value="all">연수 구분 전체 (직무+자율)</option>
                   <option value="직무연수">직무연수만 보기</option>
                   <option value="자율연수">자율연수만 보기</option>
                 </select>
               )}
 
-              {(selectedCategoryId === 'lab' || selectedCategoryId === 'all') && (
+              {(selectedCategoryId === 'lab' || selectedCategoryId === 'plc') && (
                 <select
                   value={selectedSubjectFilter}
                   onChange={(e) => setSelectedSubjectFilter(e.target.value)}
-                  className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-amber-800 focus:outline-none cursor-pointer"
+                  className="rounded-xl border border-amber-200 bg-amber-50/60 px-3 py-1.5 text-xs font-bold text-amber-800 focus:outline-none cursor-pointer"
                 >
                   <option value="all">2022 개정 교과 전체</option>
                   {CURRICULUM_2022_SUBJECTS.map((subj) => (

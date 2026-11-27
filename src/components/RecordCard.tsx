@@ -195,10 +195,17 @@ export function RecordCard({
               )}
 
               {templateType === 'plc' && record.payload.groupName && (
-                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px] truncate max-w-[160px]">
+                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px] truncate max-w-[140px]">
                   {record.payload.groupName}
                 </span>
               )}
+
+              {(templateType === 'lab' || templateType === 'plc') &&
+                record.payload.gradeSubject && (
+                  <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[11px]">
+                    {record.payload.gradeSubject}
+                  </span>
+                )}
             </div>
 
             <div className="flex items-center gap-1.5 shrink-0">

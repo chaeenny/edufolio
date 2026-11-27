@@ -677,6 +677,58 @@ export function RecordEditorModal({
                 />
               </div>
 
+              {/* 신과람 / 교학공에서도 해당되는 2022 개정 교과 및 단원 선택 지원 */}
+              <div className="bg-white p-4 rounded-xl border border-emerald-200/90 space-y-2.5">
+                <label className="block text-xs font-extrabold text-slate-800">
+                  관련 2022 개정 교육과정 교과 및 단원 (신과람·교학공 실험/연구 해당 교과 선택)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {CURRICULUM_2022_SUBJECTS.map((subj) => {
+                    const active = gradeSubject === subj;
+                    return (
+                      <button
+                        key={subj}
+                        type="button"
+                        onClick={() => setGradeSubject(subj)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                          active
+                            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:border-emerald-300'
+                        }`}
+                      >
+                        {subj}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">
+                      해당 교과명 (직접 입력 가능)
+                    </label>
+                    <input
+                      type="text"
+                      value={gradeSubject}
+                      onChange={(e) => setGradeSubject(e.target.value)}
+                      placeholder="예: 화학, 통합과학1, 과학탐구실험1"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-emerald-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 mb-1">
+                      해당 단원명 / 실험 주제
+                    </label>
+                    <input
+                      type="text"
+                      value={unitName}
+                      onChange={(e) => setUnitName(e.target.value)}
+                      placeholder="예: 산과 염기의 중화 적정 / 산화와 환원"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   공동 연구 및 수업 나눔 내용
